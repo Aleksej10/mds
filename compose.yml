@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports: 
+      - 3193:3193
+    volumes:
+      - .:/app
+    restart: unless-stopped
+  test:
+    build: .
+    environment:
+      - APP_HOST=app
+    command: ["pytest"]
+    volumes:
+      - .:/app

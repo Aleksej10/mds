@@ -1,0 +1,63 @@
+Napomena vezana za algoritam koji racuna "optimalan" raspored rackova i uredjaja
+
+def naive_layout(racks, devices):
+  racks = racks
+  for rack in racks:
+    rack['space_left'] = rack['size']
+    rack['power_left'] = rack['max_consumption']
+    rack['devices'] = []
+
+  devices = devices
+  for device in devices:
+    device['density'] = density(device)
+
+  racks   = sorted(racks,   key = lambda x: ( x['size'],  x['max_consumption']))
+  devices = sorted(devices, key = lambda x: (-x['size'], -x['density']))
+
+  for device in devices:
+    rack = next((r for r in racks if can_fit(device, r)), None)
+    if rack == None:
+      return { 'msg': "Couldn't calculate a layout that would fit all of the devices" }
+    else:
+      add_to_rack(device, rack)
+
+  print(racks)
+
+  layout = {}
+  for rack in racks:
+    layout[rack['id']] = {
+      'devices': rack['devices'],
+      'utilization': utilization(rack),
+    }
+
+  return layout
+
+
+Nacin rada algoritma je vodjen specifikacijama, ali gde one ostavljaju prostor za slobodnu procenu, algoritam nastoji da bude optimalan u nekom "realnom" slucaju, a rezeon pored odluka vezanih za te delove ce biti dodat u zagradama izmedju opisa algoritma.
+
+Algoritam pre svega tezi da spakuje sve uradjaje u rackove a zatim gleda da svaki rack ima najvecu mogucu iskoriscenost energije. (Predpostavlja se da nam je u realnom slucaju presudno da imamo sve dostupne uredjaje online)
+
+Gledajuci rackove sumarno, sa strane procentualnog iskoriscenja energije, nebitno je da li imamo dva racka koja rade na po 50% ili jedan koji radi na 100% a drugi je prazan.
+Imajuci to u vidu, ovaj algoritam ce uvek da favorizuje slucaj gde je jedan rack na 100% a drugi prazan. (Opet, u realnom slucaju, ako vec favorizujemo procentualno iskoriscenje energije rackova, slucaj gde nam ostaju prazni rackovi a popunjeni su vrlo dobro iskoriscenji - treba biti favorizovan)
+
+Iako ima naziv "naivni raspored", ovakav algoritam garantuje da ce ubaciti sve uredjaje u rackove, ako je to moguce.
+Ova osobina algoritma je i dokaziva, ali ukratko se svodi na specifikaciju problema gde nam nije bitan raspored uredjaja unutar rackova - "Nije potrebno ni uzeti u obzir na kojim jedinicama će se uređaj nalaziti, samo da za njega ima mesta u datom rack-u."
+
+devices = sorted(devices, key = lambda x: (-x['size'], -x['density']))
+
+density je u ovom slucaju mera potrosnje energije u odnosu na broj jedinica koje uredjaj zauzima:
+
+def density(device):
+  return round(float(device['consumption']) / device['size'], 2)
+
+U ovom slucaju nam tehnicki nije potreban, mogli bi da koristimo i 
+
+devices = sorted(devices, key = lambda x: (-x['size'], -x['consumption']))
+
+ali je ostavljen kao ideja, jer ako bi smo zamenili redosled kojim sortiramo uredjaje tako da prvo gledamo da spakujemo "gusce", algoritam bi onda pre svega tezio da sto bolej iskoristi procentualno iskoriscenje energije po racku, ali bi time rizikovao da neki od uredjaja ostane bez mesta u racku.
+
+Ukoliko nam nije bitno da svi uredjaji dobiju svoje mesto, problem postaje kompleksniji jer se uvode novi parametri - balans izmedju iskoriscenosti energije i koriscenja svih uredjaja.
+
+Jos samo treba dodati, iako ce ovaj algoritam da proba da spakuje sve uredjaje i uz to se potrudi da iskoriscenost energije bude sto bolja, on i dalje ne garantuje najbolju iskoriscenost energije.
+Optimalan algoritam bi se u ovom slucaju mogao napisati tako da uzima u razmatranje sve kombinacije gde su svi uredjaji u nekom racku, i racuna koja od tih slucajeva daje najbolju iskoriscenost, i onda bi se efikasnost naivnog algoritma za razlicite kombinacije rackova i uredjaja, mogla porediti u odnosu na optimalani algoritam.
+Ovo doduse deluje kao NP-problem, i za velike brojeve rackova i uredjaja bi verovatno morale da se koriste neke heruistike za suzavanje pretrage slucajeva, a u praksi bi se verovatno dobro ponasala neka vrsta monte-carlo algoritma
